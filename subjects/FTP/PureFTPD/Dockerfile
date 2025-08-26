@@ -39,15 +39,11 @@ WORKDIR /home/ubuntu
 ARG MAKE_OPT
 
 # Set up fuzzers
-RUN git clone https://github.com/profuzzbench/aflnet.git && \
+RUN git clone https://github.com/Keyi-Wang/llm-aflnet.git aflnet && \
     cd aflnet && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
-RUN git clone https://github.com/profuzzbench/aflnwe.git && \
-    cd aflnwe && \
-    make clean all $MAKE_OPT && \
-    cd llvm_mode && make $MAKE_OPT
 
 # Set up environment variables for AFLNet
 ENV WORKDIR="/home/ubuntu/experiments"
@@ -75,7 +71,7 @@ env ASAN_OPTIONS='abort_on_error=1:symbolize=0:detect_leaks=0:detect_stack_use_a
 RUN cd ${WORKDIR} && \
     git clone https://github.com/jedisct1/pure-ftpd.git && \
     cd pure-ftpd && \
-    git checkout c21b45f && \
+    git checkout 3818577a && \
     patch -p1 < ${WORKDIR}/fuzzing.patch && \
     ./autogen.sh && \
     CC="afl-clang-fast" CXX="afl-clang-fast++" CFLAGS="-fsanitize=address -g -O0" CXXFLAGS="-fsanitize=address -g -O0" LDFLAGS="-fsanitize=address" ./configure --without-privsep -without-capabilities && \
@@ -85,7 +81,7 @@ RUN cd ${WORKDIR} && \
 RUN cd ${WORKDIR} && \
     git clone https://github.com/jedisct1/pure-ftpd.git pure-ftpd-gcov && \
     cd pure-ftpd-gcov && \
-    git checkout c21b45f && \
+    git checkout 3818577a && \
     patch -p1 < ${WORKDIR}/gcov.patch && \
     ./autogen.sh && \
     CFLAGS="-fprofile-arcs -ftest-coverage" CPPFLAGS="-fprofile-arcs -ftest-coverage" CXXFLAGS="-fprofile-arcs -ftest-coverage" LDFLAGS="-fprofile-arcs -ftest-coverage" ./configure --without-privsep -without-capabilities && \

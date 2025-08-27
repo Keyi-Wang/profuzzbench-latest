@@ -2,6 +2,8 @@ FROM ubuntu:20.04
 
 # Install common dependencies
 ENV DEBIAN_FRONTEND=noninteractive
+RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
+RUN sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 RUN apt-get -y update && \
     apt-get -y install sudo \ 
     apt-utils \
@@ -13,6 +15,7 @@ RUN apt-get -y update && \
     autoconf \
     libgnutls28-dev \
     libssl-dev \
+    libcap-dev\
     llvm \
     python3-pip \
     nano \
@@ -39,13 +42,8 @@ WORKDIR /home/ubuntu
 ARG MAKE_OPT
 
 # Set up fuzzers
-RUN git clone https://github.com/profuzzbench/aflnet.git && \
+RUN git clone https://github.com/Keyi-Wang/llm-aflnet.git aflnet && \
     cd aflnet && \
-    make clean all $MAKE_OPT && \
-    cd llvm_mode && make $MAKE_OPT
-
-RUN git clone https://github.com/profuzzbench/aflnwe.git && \
-    cd aflnwe && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
@@ -67,6 +65,7 @@ RUN apt-get install -y psmisc
 
 RUN apt-get -y install \
     libpcre3-dev \
+    libpcre2-dev \
     pkg-config \
     libdb-dev \
     libgdbm-dev
@@ -83,22 +82,20 @@ env ASAN_OPTIONS='abort_on_error=1:symbolize=0:detect_leaks=0:detect_stack_use_a
 RUN cd ${WORKDIR} && \
     git clone https://github.com/Exim/exim && \
     cd exim && \
-    git checkout 38903fb && \
-    patch -p1 < ${WORKDIR}/exim-rand.patch && \
-    patch -p1 < ${WORKDIR}/exim-log-bug.patch && \
+    git checkout 6441327 && \
+    patch -p1 < ${WORKDIR}/exim1.patch && \
     cd src; mkdir Local; cp src/EDITME Local/Makefile && \
-    cd Local; patch -p1 < ${WORKDIR}/exim.patch; cd .. && \
+    cd Local; patch -p1 < ${WORKDIR}/exim2.patch; cd .. && \
     AFL_USE_ASAN=1 make CC=afl-clang-fast clean all install $MAKE_OPT
 
 # Download and compile Exim for coverage analysis
 RUN cd ${WORKDIR} && \
     git clone https://github.com/Exim/exim exim-gcov && \
     cd exim-gcov && \
-    git checkout 38903fb && \
-    patch -p1 < ${WORKDIR}/exim-rand.patch && \
-    patch -p1 < ${WORKDIR}/exim-log-bug.patch && \
+    git checkout 6441327 && \
+    patch -p1 < ${WORKDIR}/exim1.patch && \
     cd src; mkdir Local; cp src/EDITME Local/Makefile && \
-    cd Local; patch -p1 < ${WORKDIR}/exim.patch; cd .. && \
+    cd Local; patch -p1 < ${WORKDIR}/exim2.patch; cd .. && \
     make CFLAGS="-fprofile-arcs -ftest-coverage" LDFLAGS="-fprofile-arcs -ftest-coverage" LFLAGS+="-lgcov --coverage" clean all $MAKE_OPT
 
 # Configure exim

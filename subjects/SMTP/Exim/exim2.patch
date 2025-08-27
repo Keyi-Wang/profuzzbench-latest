@@ -1,0 +1,28 @@
+--- a/Makefile	2025-08-27 07:08:47.467385687 +0000
++++ b/Makefile	2025-08-27 08:28:52.510129946 +0000
+@@ -136,7 +136,7 @@
+ # deliveries. (Local deliveries run as various non-root users, typically as the
+ # owner of a local mailbox.) Specifying these values as root is not supported.
+ 
+-EXIM_USER=
++EXIM_USER=ubuntu
+ 
+ # If you specify EXIM_USER as a name, this is looked up at build time, and the
+ # uid number is built into the binary. However, you can specify that this
+@@ -214,12 +214,12 @@
+ # If you are building with TLS, the library configuration must be done:
+ 
+ # Uncomment this if you are using OpenSSL
+-# USE_OPENSSL=yes
++USE_OPENSSL=yes
+ # Uncomment one of these settings if you are using OpenSSL; pkg-config vs not
+ # and an optional location.
+-# USE_OPENSSL_PC=openssl
+-# TLS_LIBS=-lssl -lcrypto
+-# TLS_LIBS=-L/usr/local/openssl/lib -lssl -lcrypto
++USE_OPENSSL_PC=openssl
++TLS_LIBS=-lssl -lcrypto
++TLS_LIBS=-L/usr/local/openssl/lib -lssl -lcrypto
+ 
+ # Uncomment this if you are using GnuTLS
+ # USE_GNUTLS=yes

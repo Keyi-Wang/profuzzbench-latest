@@ -2,6 +2,8 @@ FROM ubuntu:20.04
 
 # Install common dependencies
 ENV DEBIAN_FRONTEND=noninteractive
+RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
+RUN sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 RUN apt-get -y update && \
     apt-get -y install sudo \ 
     apt-utils \
@@ -13,6 +15,7 @@ RUN apt-get -y update && \
     autoconf \
     libgnutls28-dev \
     libssl-dev \
+    libcap-dev\
     llvm \
     python3-pip \
     nano \
@@ -39,13 +42,8 @@ WORKDIR /home/ubuntu
 ARG MAKE_OPT
 
 # Set up fuzzers
-RUN git clone https://github.com/profuzzbench/aflnet.git && \
+RUN git clone https://github.com/Keyi-Wang/llm-aflnet.git aflnet && \
     cd aflnet && \
-    make clean all $MAKE_OPT && \
-    cd llvm_mode && make $MAKE_OPT
-
-RUN git clone https://github.com/profuzzbench/aflnwe.git && \
-    cd aflnwe && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
@@ -71,7 +69,7 @@ RUN mkdir $WORKDIR
 RUN cd ${WORKDIR} && \
     git clone https://github.com/proftpd/proftpd.git && \
     cd proftpd && \
-    git checkout 4017eff8 && \
+    git checkout 76b7a76 && \
     CC="afl-clang-fast" CXX="afl-clang-fast++" ./configure --enable-devel=nodaemon:nofork && \
     AFL_USE_ASAN=1 make $MAKE_OPT
 
@@ -79,7 +77,7 @@ RUN cd ${WORKDIR} && \
 RUN cd ${WORKDIR} && \
     git clone https://github.com/proftpd/proftpd.git proftpd-gcov && \
     cd proftpd-gcov && \
-    git checkout 4017eff8 && \
+    git checkout 76b7a76 && \
     CFLAGS="-fprofile-arcs -ftest-coverage" CPPFLAGS="-fprofile-arcs -ftest-coverage" CXXFLAGS="-fprofile-arcs -ftest-coverage" LDFLAGS="-fprofile-arcs -ftest-coverage" ./configure --enable-devel=nodaemon:nofork && \
     make $MAKE_OPT
 

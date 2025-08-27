@@ -1,109 +1,117 @@
 diff --git a/BasicUsageEnvironment/BasicTaskScheduler.cpp b/BasicUsageEnvironment/BasicTaskScheduler.cpp
-index f96b27f..2669078 100644
+index 0809fc2..f1001b5 100644
 --- a/BasicUsageEnvironment/BasicTaskScheduler.cpp
 +++ b/BasicUsageEnvironment/BasicTaskScheduler.cpp
-@@ -78,6 +78,7 @@ void BasicTaskScheduler::SingleStep(unsigned maxDelayTime) {
-   if (tv_timeToDelay.tv_sec > MAX_TV_SEC) {
-     tv_timeToDelay.tv_sec = MAX_TV_SEC;
-   }
-+
-   // Also check our "maxDelayTime" parameter (if it's > 0):
-   if (maxDelayTime > 0 &&
-       (tv_timeToDelay.tv_sec > (long)maxDelayTime/MILLION ||
-diff --git a/Makefile b/Makefile
-index f9f74d6..e25af5f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,16 +1,16 @@
- ##### Change the following for your environment:
--COMPILE_OPTS =		$(INCLUDES) -I. $(EXTRA_LDFLAGS) -DBSD=1 -O -DSOCKLEN_T=socklen_t -DHAVE_SOCKADDR_LEN=1 -DTIME_BASE=int
-+COMPILE_OPTS =		$(INCLUDES) -I. -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DALLOW_RTSP_SERVER_PORT_REUSE=1
+@@ -25,7 +25,19 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
+ #include <sys/select.h>
+ #include <unix.h>
+ #endif
+-
++#include <atomic>
++// Compat for libstdc++ that lacks atomic_flag::test() (C++20)
++#if !defined(__cpp_lib_atomic_flag_test) || __cpp_lib_atomic_flag_test < 201907L
++static inline bool atomic_flag_test_acquire(std::atomic_flag& f) {
++  // emulate a read: test_and_set() sets the flag; if it was clear, restore it
++  bool was_set = f.test_and_set(std::memory_order_acquire);
++  if (!was_set) f.clear(std::memory_order_release);
++  return was_set;
++}
++#define ATOMICFLAG_TEST(f_) atomic_flag_test_acquire((f_))
++#else
++#define ATOMICFLAG_TEST(f_) ( (f_).test(std::memory_order_acquire) )
++#endif
+ ////////// BasicTaskScheduler //////////
+ 
+ BasicTaskScheduler* BasicTaskScheduler::createNew(unsigned maxSchedulerGranularity) {
+@@ -188,7 +200,7 @@ void BasicTaskScheduler::SingleStep(unsigned maxDelayTime) {
+       if (mask == 0) mask = EVENT_TRIGGER_ID_HIGH_BIT;
+ 
+ #ifndef NO_STD_LIB
+-      if (fTriggersAwaitingHandling[i].test()) {
++      if (ATOMICFLAG_TEST(fTriggersAwaitingHandling[i])) {
+ 	fTriggersAwaitingHandling[i].clear();
+ #else
+       if (fTriggersAwaitingHandling[i]) {
+diff --git a/config.linux b/config.linux
+index 489ccc1..9962189 100644
+--- a/config.linux
++++ b/config.linux
+@@ -1,9 +1,13 @@
++CFLAGS += -fprofile-arcs -ftest-coverage
++CPPFLAGS += -fprofile-arcs -ftest-coverage
++CXXFLAGS += -fprofile-arcs -ftest-coverage
++LDFLAGS += -fprofile-arcs -ftest-coverage
+ COMPILE_OPTS =		$(INCLUDES) -I/usr/local/include -I. -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DALLOW_RTSP_SERVER_PORT_REUSE=1
  C =			c
- C_COMPILER =		cc
--C_FLAGS =		$(COMPILE_OPTS)
-+C_FLAGS =		$(COMPILE_OPTS) $(CPPFLAGS) $(CFLAGS)
+-C_COMPILER =		cc
++C_COMPILER =		gcc
+ C_FLAGS =		$(COMPILE_OPTS) $(CPPFLAGS) $(CFLAGS)
  CPP =			cpp
- CPLUSPLUS_COMPILER =	c++
--CPLUSPLUS_FLAGS =	$(COMPILE_OPTS) -Wall
-+CPLUSPLUS_FLAGS =	$(COMPILE_OPTS) -Wall -DBSD=1 $(CPPFLAGS) $(CXXFLAGS)
+-CPLUSPLUS_COMPILER =	c++
++CPLUSPLUS_COMPILER =	g++
+ CPLUSPLUS_FLAGS =	$(COMPILE_OPTS) -Wall -DBSD=1 $(CPPFLAGS) $(CXXFLAGS)
  OBJ =			o
--LINK =			c++ -o 
--LINK_OPTS =		-L.
-+LINK =			c++ -o
-+LINK_OPTS =		-L. $(LDFLAGS)
- CONSOLE_LINK_OPTS =	$(LINK_OPTS)
--LIBRARY_LINK =		libtool -s -o 
-+LIBRARY_LINK =		ar cr 
- LIBRARY_LINK_OPTS =	
- LIB_SUFFIX =			a
- LIBS_FOR_CONSOLE_APPLICATION =
+ LINK =			c++ -o
 diff --git a/liveMedia/GenericMediaServer.cpp b/liveMedia/GenericMediaServer.cpp
-index 4690516..b1d2bf3 100644
+index fee1205..8e4f779 100644
 --- a/liveMedia/GenericMediaServer.cpp
 +++ b/liveMedia/GenericMediaServer.cpp
-@@ -319,7 +319,7 @@ GenericMediaServer::ClientSession* GenericMediaServer::createNewClientSessionWit
-   // (it will be encoded as a 8-digit hex number).  (We avoid choosing session id 0,
-   // because that has a special use by some servers.)
+@@ -403,7 +403,7 @@ GenericMediaServer::ClientSession* GenericMediaServer::createNewClientSessionWit
+   // because that has a special use by some servers.  Similarly, we avoid choosing the same
+   // session id twice in a row.)
    do {
 -    sessionId = (u_int32_t)our_random32();
 +    sessionId = (u_int32_t)8888;
      snprintf(sessionIdStr, sizeof sessionIdStr, "%08X", sessionId);
-   } while (sessionId == 0 || lookupClientSession(sessionIdStr) != NULL);
- 
-diff --git a/liveMedia/RTSPServer.cpp b/liveMedia/RTSPServer.cpp
-index 87d723c..01a8b55 100644
---- a/liveMedia/RTSPServer.cpp
-+++ b/liveMedia/RTSPServer.cpp
-@@ -1594,6 +1594,7 @@ void RTSPServer::RTSPClientSession
-     }
-   }
-   if (noSubsessionsRemain) delete this;
-+  //exit(0);
- }
- 
- void RTSPServer::RTSPClientSession
+   } while (sessionId == 0 || sessionId == fPreviousClientSessionId
+ 	   || lookupClientSession(sessionIdStr) != NULL);
 diff --git a/testProgs/testOnDemandRTSPServer.cpp b/testProgs/testOnDemandRTSPServer.cpp
-index 6bf44c1..e5d8bfd 100644
+index 985a2e2..5fb03b6 100644
 --- a/testProgs/testOnDemandRTSPServer.cpp
 +++ b/testProgs/testOnDemandRTSPServer.cpp
-@@ -20,6 +20,9 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
+@@ -22,6 +22,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
  
- #include "liveMedia.hh"
  #include "BasicUsageEnvironment.hh"
+ #include "announceURL.hh"
 +#include <signal.h>
 +#include <unistd.h>
-+
  
  UsageEnvironment* env;
  
-@@ -38,6 +41,13 @@ static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
+@@ -52,7 +54,14 @@ static void onOggDemuxCreation(OggFileServerDemux* newDemux, void* /*clientData*
+   newDemuxWatchVariable = 1;
+ }
  
- static char newDemuxWatchVariable;
- 
-+
 +void sig_handler(int signo)
 +{
 +  if (signo == SIGUSR1)
 +    exit(0);
 +}
 +
- static MatroskaFileServerDemux* matroskaDemux;
- static void onMatroskaDemuxCreation(MatroskaFileServerDemux* newDemux, void* /*clientData*/) {
-   matroskaDemux = newDemux;
-@@ -51,6 +61,7 @@ static void onOggDemuxCreation(OggFileServerDemux* newDemux, void* /*clientData*
- }
- 
  int main(int argc, char** argv) {
 +  signal(SIGUSR1, sig_handler);
    // Begin by setting up our usage environment:
    TaskScheduler* scheduler = BasicTaskScheduler::createNew();
    env = BasicUsageEnvironment::createNew(*scheduler);
-@@ -65,7 +76,7 @@ int main(int argc, char** argv) {
- #endif
- 
-   // Create the RTSP server:
+@@ -72,7 +81,7 @@ int main(int argc, char** argv) {
+   RTSPServer* rtspServer = RTSPServer::createNew(*env, 322, authDB);
+ #else
+   // Serve regular RTSP (over a TCP connection):
 -  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554, authDB);
 +  RTSPServer* rtspServer = RTSPServer::createNew(*env, atoi(argv[1]), authDB);
+ #endif
    if (rtspServer == NULL) {
      *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
-     exit(1);
+diff --git a/testProgs/testRTSPClient.cpp b/testProgs/testRTSPClient.cpp
+index fad1d91..51dd54c 100644
+--- a/testProgs/testRTSPClient.cpp
++++ b/testProgs/testRTSPClient.cpp
+@@ -61,7 +61,7 @@ void usage(UsageEnvironment& env, char const* progName) {
+   env << "\t(where each <rtsp-url-i> is a \"rtsp://\" URL)\n";
+ }
+ 
+-EventLoopWatchVariable eventLoopWatchVariable = 0;
++EventLoopWatchVariable eventLoopWatchVariable{0};
+ 
+ int main(int argc, char** argv) {
+   // Begin by setting up our usage environment:

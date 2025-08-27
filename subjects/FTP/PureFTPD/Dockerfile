@@ -2,6 +2,8 @@ FROM ubuntu:20.04
 
 # Install common dependencies
 ENV DEBIAN_FRONTEND=noninteractive
+RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
+RUN sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 RUN apt-get -y update && \
     apt-get -y install sudo \ 
     apt-utils \
@@ -13,6 +15,7 @@ RUN apt-get -y update && \
     autoconf \
     libgnutls28-dev \
     libssl-dev \
+    libcap-dev\
     llvm \
     python3-pip \
     nano \

@@ -191,24 +191,18 @@ index 6e8ef7a57..44b17564a 100644
  int     runrc                  = 0;
  
 diff --git a/src/src/local_scan.h b/src/src/local_scan.h
-index ffda70e34..4fd85e1bd 100644
+index ffda70e34..73a39ae1a 100644
 --- a/src/src/local_scan.h
 +++ b/src/src/local_scan.h
-@@ -221,11 +221,13 @@ extern void    smtp_vprintf(const char *, BOOL, va_list);
- 	string_sprintf_trc(fmt, US __FUNCTION__, __LINE__, __VA_ARGS__)
- extern uschar *string_sprintf_trc(const char *, const uschar *, unsigned, ...) ALMOST_PRINTF(1,4);
+@@ -223,9 +223,11 @@ extern uschar *string_sprintf_trc(const char *, const uschar *, unsigned, ...) A
  
--#define store_get(size, proto_mem) \
--	store_get_3((size), (proto_mem), __FUNCTION__, __LINE__)
-+// #define store_get(size, proto_mem) \
-+// 	store_get_3((size), (proto_mem), __FUNCTION__, __LINE__)
-+#define store_get(size, proto_mem) malloc(size)
+ #define store_get(size, proto_mem) \
+ 	store_get_3((size), (proto_mem), __FUNCTION__, __LINE__)
++// #define store_get(size, proto_mem) malloc(size)
  extern void   *store_get_3(int, const void *, const char *, int)	ALLOC ALLOC_SIZE(1) WARN_UNUSED_RESULT;
--#define store_get_perm(size, proto_mem) \
--	store_get_perm_3((size), (proto_mem), __FUNCTION__, __LINE__)
-+// #define store_get_perm(size, proto_mem) \
-+// 	store_get_perm_3((size), (proto_mem), __FUNCTION__, __LINE__)
-+#define store_get_perm(size,  proto_mem) malloc(size)
+ #define store_get_perm(size, proto_mem) \
+ 	store_get_perm_3((size), (proto_mem), __FUNCTION__, __LINE__)
++// #define store_get_perm(size,  proto_mem) malloc(size)
  extern void   *store_get_perm_3(int, const void *, const char *, int)	ALLOC ALLOC_SIZE(1) WARN_UNUSED_RESULT;
  
  
@@ -277,55 +271,30 @@ index 8f40a86e3..00063a0ec 100644
  /* Add the current message id onto the current process info string if
  it will fit. */
 diff --git a/src/src/store.h b/src/src/store.h
-index e54d45fc0..76ca147a4 100644
+index e54d45fc0..85113f956 100644
 --- a/src/src/store.h
 +++ b/src/src/store.h
-@@ -47,22 +47,37 @@ tracing information for debugging. */
- #define store_extend(addr, old, new) \
-   store_extend_3(addr, old, new, __FUNCTION__, __LINE__)
+@@ -64,6 +64,20 @@ tracing information for debugging. */
+ #define store_reset(mark) \
+ 	store_reset_3(mark, __FUNCTION__, __LINE__)
  
--#define store_free(addr) \
--	store_free_3(addr, __FUNCTION__, __LINE__)
-+// #define store_free(addr) \
-+// 	store_free_3(addr, __FUNCTION__, __LINE__)
++// #define store_free(addr) free(addr)
 +// /* store_get & store_get_perm are in local_scan.h */
 +// #define store_get_quoted(size, proto_mem, quoter, quoter_name) \
 +// 	store_get_quoted_3((size), (proto_mem), (quoter), (quoter_name), \
 +// 			  __FUNCTION__, __LINE__)
-+// #define store_malloc(size) \
-+// 	store_malloc_3(size, __FUNCTION__, __LINE__)
++// #define store_malloc(size) malloc(size)
 +// #define store_mark(void) \
 +// 	store_mark_3(__FUNCTION__, __LINE__)
 +// #define store_newblock(oldblock, newsize, datalen) \
 +// 	store_newblock_3(oldblock, newsize, datalen, __FUNCTION__, __LINE__)
-+// #define store_release_above(addr) \
-+// 	store_release_above_3(addr, __FUNCTION__, __LINE__)
-+// #define store_reset(mark) \
-+// 	store_reset_3(mark, __FUNCTION__, __LINE__)
-+// #define store_extend(addr, old, new) \
-+//   store_extend_3(addr, old, new, __FUNCTION__, __LINE__)
-+#define store_free(addr) free(addr)
- /* store_get & store_get_perm are in local_scan.h */
- #define store_get_quoted(size, proto_mem, quoter, quoter_name) \
- 	store_get_quoted_3((size), (proto_mem), (quoter), (quoter_name), \
- 			  __FUNCTION__, __LINE__)
--#define store_malloc(size) \
--	store_malloc_3(size, __FUNCTION__, __LINE__)
-+#define store_malloc(size) malloc(size)
- #define store_mark(void) \
- 	store_mark_3(__FUNCTION__, __LINE__)
- #define store_newblock(oldblock, newsize, datalen) \
- 	store_newblock_3(oldblock, newsize, datalen, __FUNCTION__, __LINE__)
--#define store_release_above(addr) \
--	store_release_above_3(addr, __FUNCTION__, __LINE__)
--#define store_reset(mark) \
--	store_reset_3(mark, __FUNCTION__, __LINE__)
-+#define store_release_above(addr) free(addr)
-+#define store_reset(mark) (mark)
++// #define store_release_above(addr) free(addr)
++// #define store_reset(mark) (mark)
++
 +
  
- 
  /* The real functions */
+ typedef void ** rmark;
 diff --git a/src/src/transports/appendfile.c b/src/src/transports/appendfile.c
 index 54ccd7165..cd7176cea 100644
 --- a/src/src/transports/appendfile.c

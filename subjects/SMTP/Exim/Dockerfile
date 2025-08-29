@@ -70,9 +70,8 @@ RUN apt-get -y install \
     libdb-dev \
     libgdbm-dev
 
-COPY --chown=ubuntu:ubuntu exim.patch ${WORKDIR}/exim.patch
-COPY --chown=ubuntu:ubuntu exim-rand.patch ${WORKDIR}/exim-rand.patch
-COPY --chown=ubuntu:ubuntu exim-log-bug.patch ${WORKDIR}/exim-log-bug.patch
+COPY --chown=ubuntu:ubuntu exim1.patch ${WORKDIR}/exim1.patch
+COPY --chown=ubuntu:ubuntu exim2.patch ${WORKDIR}/exim2.patch
 COPY --chown=ubuntu:ubuntu exim.configure.patch ${WORKDIR}/exim.configure.patch
 
 # Set up environment variables for ASAN

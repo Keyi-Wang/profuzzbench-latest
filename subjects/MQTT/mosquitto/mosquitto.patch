@@ -1,0 +1,24 @@
+diff --git a/src/conf.c b/src/conf.c
+index 59404f6e..6cc21a97 100644
+--- a/src/conf.c
++++ b/src/conf.c
+@@ -2315,10 +2315,15 @@ static int config__check(struct mosquitto__config *config)
+ 
+ 	/* Check for missing TLS cafile/capath/certfile/keyfile */
+ 	for(int i=0; i<config->listener_count; i++){
+-		bool cafile = !!config->listeners[i].cafile;
+-		bool capath = !!config->listeners[i].capath;
+-		bool certfile = !!config->listeners[i].certfile;
+-		bool keyfile = !!config->listeners[i].keyfile;
++		#ifdef WITH_TLS
++		bool cafile   = config->listeners[i].security_options.cafile   != NULL;
++		bool capath   = config->listeners[i].security_options.capath   != NULL;
++		bool certfile = config->listeners[i].security_options.certfile != NULL;
++		bool keyfile  = config->listeners[i].security_options.keyfile  != NULL;
++		#else
++		bool cafile=false, capath=false, certfile=false, keyfile=false;
++		#endif
++
+ 
+ 		if((certfile && !keyfile) || (!certfile && keyfile)){
+ 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Both certfile and keyfile must be provided to enable a TLS listener.");

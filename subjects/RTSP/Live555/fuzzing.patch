@@ -1,9 +1,9 @@
 diff --git a/BasicUsageEnvironment/BasicTaskScheduler.cpp b/BasicUsageEnvironment/BasicTaskScheduler.cpp
-index 416317d..3b48725 100644
+index 0809fc2..e527fb7 100644
 --- a/BasicUsageEnvironment/BasicTaskScheduler.cpp
 +++ b/BasicUsageEnvironment/BasicTaskScheduler.cpp
 @@ -16,8 +16,19 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
- // Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
+ // Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
  // Basic Usage Environment: for a simple, non-scripted, console application
  // Implementation
 -
@@ -54,10 +54,10 @@ index 489ccc1..c688854 100644
  CONSOLE_LINK_OPTS =	$(LINK_OPTS)
  LIBRARY_LINK =		ar cr 
 diff --git a/liveMedia/GenericMediaServer.cpp b/liveMedia/GenericMediaServer.cpp
-index a7fa99e..f8c74c7 100644
+index fee1205..8e4f779 100644
 --- a/liveMedia/GenericMediaServer.cpp
 +++ b/liveMedia/GenericMediaServer.cpp
-@@ -398,7 +398,7 @@ GenericMediaServer::ClientSession* GenericMediaServer::createNewClientSessionWit
+@@ -403,7 +403,7 @@ GenericMediaServer::ClientSession* GenericMediaServer::createNewClientSessionWit
    // because that has a special use by some servers.  Similarly, we avoid choosing the same
    // session id twice in a row.)
    do {
@@ -67,7 +67,7 @@ index a7fa99e..f8c74c7 100644
    } while (sessionId == 0 || sessionId == fPreviousClientSessionId
  	   || lookupClientSession(sessionIdStr) != NULL);
 diff --git a/liveMedia/RTSPServer.cpp b/liveMedia/RTSPServer.cpp
-index f494903..1e1f045 100644
+index 6eeb83a..c33ceaf 100644
 --- a/liveMedia/RTSPServer.cpp
 +++ b/liveMedia/RTSPServer.cpp
 @@ -1605,7 +1605,7 @@ void RTSPServer::RTSPClientSession
@@ -161,7 +161,7 @@ index f494903..1e1f045 100644
  
  GenericMediaServer::ClientConnection*
 diff --git a/testProgs/testOnDemandRTSPServer.cpp b/testProgs/testOnDemandRTSPServer.cpp
-index cab4f5b..0762918 100644
+index 985a2e2..4d418f7 100644
 --- a/testProgs/testOnDemandRTSPServer.cpp
 +++ b/testProgs/testOnDemandRTSPServer.cpp
 @@ -72,7 +72,7 @@ int main(int argc, char** argv) {
@@ -173,3 +173,16 @@ index cab4f5b..0762918 100644
  #endif
    if (rtspServer == NULL) {
      *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
+diff --git a/testProgs/testRTSPClient.cpp b/testProgs/testRTSPClient.cpp
+index fad1d91..51dd54c 100644
+--- a/testProgs/testRTSPClient.cpp
++++ b/testProgs/testRTSPClient.cpp
+@@ -61,7 +61,7 @@ void usage(UsageEnvironment& env, char const* progName) {
+   env << "\t(where each <rtsp-url-i> is a \"rtsp://\" URL)\n";
+ }
+ 
+-EventLoopWatchVariable eventLoopWatchVariable = 0;
++EventLoopWatchVariable eventLoopWatchVariable{0};
+ 
+ int main(int argc, char** argv) {
+   // Begin by setting up our usage environment:

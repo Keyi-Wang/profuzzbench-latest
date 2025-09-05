@@ -2,6 +2,8 @@ FROM ubuntu:20.04
 
 # Install common dependencies
 ENV DEBIAN_FRONTEND=noninteractive
+RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
+RUN sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 RUN apt-get -y update && \
     apt-get -y install sudo \ 
     apt-utils \
@@ -12,6 +14,7 @@ RUN apt-get -y update && \
     git \
     autoconf \
     libgnutls28-dev \
+    libcap-dev\
     libssl-dev \
     llvm \
     python3-pip \
@@ -39,13 +42,8 @@ WORKDIR /home/ubuntu
 ARG MAKE_OPT
 
 # Set up fuzzers
-RUN git clone https://github.com/profuzzbench/aflnet.git && \
+RUN git clone https://github.com/Keyi-Wang/llm-aflnet.git aflnet && \
     cd aflnet && \
-    make clean all $MAKE_OPT && \
-    cd llvm_mode && make $MAKE_OPT
-
-RUN git clone https://github.com/profuzzbench/aflnwe.git && \
-    cd aflnwe && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
@@ -68,6 +66,7 @@ RUN apt-get -y install \
 USER ubuntu
 
 COPY --chown=ubuntu:ubuntu kamailio.patch ${WORKDIR}/kamailio.patch
+COPY --chown=ubuntu:ubuntu gcov.patch ${WORKDIR}/gcov.patch
 COPY --chown=ubuntu:ubuntu pjsip.patch ${WORKDIR}/pjsip.patch
 
 # Set up environment variables for ASAN
@@ -96,7 +95,7 @@ RUN cd $WORKDIR && \
     git clone https://github.com/kamailio/kamailio.git kamailio-gcov && \
     cd kamailio-gcov && \
     git checkout bf24361 && \
-    patch -p1 < $WORKDIR/kamailio.patch && \
+    patch -p1 < $WORKDIR/gcov.patch && \
     make CC_EXTRA_OPTS="-fprofile-arcs -ftest-coverage" LD_EXTRA_OPTS="-fprofile-arcs -ftest-coverage" MEMPKG=sys cfg && \
     make CC_EXTRA_OPTS="-fprofile-arcs -ftest-coverage" LD_EXTRA_OPTS="-fprofile-arcs -ftest-coverage" all $MAKE_OPT
 
